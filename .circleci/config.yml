@@ -4,7 +4,8 @@ executors:
     environment:
       IMAGE_NAME: microservices-demo
     docker:
-      - image: circleci/buildpack-deps:stretch
+      - image: https://github.com/MilenaL2018/microservices-demo/tree/master/deploy/docker-compose
+
 jobs:
   build:
     executor: docker-publisher
