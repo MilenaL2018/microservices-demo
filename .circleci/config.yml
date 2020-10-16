@@ -1,7 +1,7 @@
 version: 2.1
 jobs:
   build:
-   docker:
+    docker:
       - image: docker:17.05.0-ce-git
     steps:
       - checkout
