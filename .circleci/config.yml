@@ -1,8 +1,11 @@
 version: 2.1
-  docker:
-    - image: circleci/buildpack-deps:stretch
 jobs:
   build:
+    docker:
+      - image: circleci/buildpack-deps:stretch
+        auth:
+          username: milelucero98
+          password: $DOCKERHUB_PASSWORD
     steps:
       - checkout
       - setup_remote_docker
@@ -13,9 +16,21 @@ jobs:
       - run:
           name: Build Docker Image
           command:  docker-compose -f deploy/docker-compose/docker-compose.yml up -d
+  test:
+    docker:
+      - image: circleci/buildpack-deps:stretch
+        auth:
+          username: milelucero98
+          password: $DOCKERHUB_PASSWORD
+    steps:
+      - checkout
+      - run: echo "this is the test job"
+
+# Orchestrate our job run sequence
 workflows:
-  version: 2
-  build-master:
+  build_and_test:
     jobs:
       - build
-
+      - test:
+          requires:
+            - build
