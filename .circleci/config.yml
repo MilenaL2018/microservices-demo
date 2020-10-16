@@ -8,16 +8,15 @@ jobs:
       - setup_remote_docker
       - run:
         name: Install dependencies
-        command: |
+        command:
           apk add --no-cache py-pip=9.0.0-r1
           pip install docker-compose==1.15.0
       - run:
           name: Build Docker image
-          command: |
+          command:
             docker-compose -f deploy/docker-compose/docker-compose.yml up -d
 workflows:
   version: 2
-  build-master:
     jobs:
       - build
 
