@@ -8,14 +8,17 @@ jobs:
           password: $DOCKERHUB_PASSWORD
     steps:
       - checkout
-      - setup_remote_docker
-      - run:
-          name: Install Docker Compose
-          command: |
-            sudo pip install docker-compose
+      - setup_remote_docker:
+          version: 19.03.13
+          docker_layer_caching: true
+
       - run:
           name: Build Docker Image
-          command:  docker-compose -f deploy/docker-compose/docker-compose.yml up -d
+          command: |
+          TAG=0.1.$CIRCLE_BUILD_NUM
+          docker build -t CircleCI-Public/circleci-demo-docker:$TAG .
+          echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+          docker push CircleCI-Public/circleci-demo-docker:$TAG
   test:
     docker:
       - image: circleci/buildpack-deps:stretch
