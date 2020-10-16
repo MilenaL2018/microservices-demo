@@ -1,25 +1,21 @@
 version: 2.1
-executors:
-  docker-publisher:
-    environment:
-      IMAGE_NAME: microservices-demo-TP
-    docker:
-      - image: circleci/buildpack-deps:stretch
+  docker:
+    - image: circleci/buildpack-deps:stretch
 jobs:
   build:
-    executor: docker-publisher
     steps:
       - checkout
       - setup_remote_docker
       - run:
-          name: Build Docker image
-          command:
-            docker-compose -f deploy/docker-compose/docker-compose.yml up -d
+          name: Install Docker Compose
+          command: |
+            sudo pip install docker-compose
+      - run:
+          name: Build Docker Image
+          command:  docker-compose -f deploy/docker-compose/docker-compose.yml up -d
 workflows:
   version: 2
   build-master:
     jobs:
-      - build:
-          filters:
-            branches:
-              only: master
+      - build
+
