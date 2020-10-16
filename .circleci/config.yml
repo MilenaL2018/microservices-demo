@@ -1,28 +1,55 @@
 version: 2.1
+executors:
+  docker-publisher:
+    environment:
+      IMAGE_NAME: microservices-demo
+    docker:
+      - image: circleci/buildpack-deps:stretch
 jobs:
   build:
-    # pre-built images: https://circleci.com/docs/2.0/circleci-images/
-    docker:
-      - image: circleci/node:latest
-        auth:
-          username: mydockerhub-user
-          password: $DOCKERHUB_PASSWORD  # context / project UI env-var reference
+    executor: docker-publisher
     steps:
       - checkout
+      - setup_remote_docker
       - run:
-          name: The First Step
+          name: Build Docker image
           command: |
-            echo 'Hello World!'
-            echo 'This is the delivery pipeline'
+            docker build -t $IMAGE_NAME:latest .
       - run:
-          name: Code Has Arrived
-          command: |
-            ls -al
-            echo '^^^That should look familiar^^^'
+          name: Archive Docker image
+          command: docker save -o image.tar $IMAGE_NAME
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./image.tar
+  publish-latest:
+    executor: docker-publisher
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - setup_remote_docker
       - run:
-          name: Running in a Unique Container
+          name: Load archived Docker image
+          command: docker load -i /tmp/workspace/image.tar
+      - run:
+          name: Publish Docker Image to Docker Hub
           command: |
-            node -v
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            docker push $IMAGE_NAME:latest
+workflows:
+  version: 2
+  build-master:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: master
+      - publish-latest:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
 
 
 
