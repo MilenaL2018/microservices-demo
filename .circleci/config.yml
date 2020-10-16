@@ -1,28 +1,24 @@
 version: 2.1
 jobs:
   build:
+   docker:
+      - image: docker:17.05.0-ce-git
     steps:
       - checkout
       - setup_remote_docker
       - run:
+        name: Install dependencies
+        command: |
+          apk add --no-cache py-pip=9.0.0-r1
+          pip install docker-compose==1.15.0
+      - run:
           name: Build Docker image
           command: |
             docker-compose -f deploy/docker-compose/docker-compose.yml up -d
-      - run:
-          name: Archive Docker image
-          command: docker save -o image.tar $IMAGE_NAME
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./image.tar
 workflows:
   version: 2
   build-master:
     jobs:
-      - build:
-          filters:
-            branches:
-              only: master
-
+      - build
 
 
