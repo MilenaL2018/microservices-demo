@@ -2,36 +2,64 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: circleci/buildpack-deps:stretch
-        auth:
-          username: milelucero98
-          password: $DOCKERHUB_PASSWORD
+      # using custom image, see .circleci/images/primary/Dockerfile
+      - image: deploy/docker-compose/docker-compose.yml
+      - image: postgres:9.4.1
+        environment:
+          POSTGRES_USER: ubuntu
+          POSTGRES_DB: contacts
+    working_directory: /home/milena/Desktop/Proyecto-Integrador/microservices-demo
+
+    environment:
+      TEST_RESULTS: /tmp/test-results
+        
+
     steps:
       - checkout
+      - run: mkdir -p $TEST_RESULTS
+
       - setup_remote_docker:
           version: 19.03.13
           docker_layer_caching: true
+      
       - run:
+          name: Install Docker Compose
           command: |
-            TAG=0.1.$CIRCLE_BUILD_NUM
-           docker build -t CircleCI-Public/circleci-demo-docker:$TAG .
-            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-            docker push CircleCI-Public/circleci-demo-docker:$TAG
-  test:
-    docker:
-      - image: circleci/buildpack-deps:stretch
-        auth:
-          username: milelucero98
-          password: $DOCKERHUB_PASSWORD
-    steps:
-      - checkout
-      - run: echo "this is the test job"
+            set -x
+            curl -L https://github.com/docker/compose/releases/download/1.11.2/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+            chmod +x /usr/local/bin/docker-compose
+      - run: 
+          name: Clone Git Hub repository
+          command: |
+          mkdir -p socks-demo
+          cd socks-demo
+          git clone https://github.com/microservices-demo/microservices-demo.git
+      
+      - run:
+          name: Initiating app
+          command: |
+          cd microservices-demo
+          docker-compose -f deploy/docker-compose/docker-compose.yml up -d
+          
+      - run:
+          name: Clone components
+          command: |
+          cd socks-demo
+          git clone https://github.com/microservices-demo/front-end.git
+          git clone https://github.com/microservices-demo/user.git
+          git clone https://github.com/microservices-demo/edge-router.git
 
-# Orchestrate our job run sequence
-workflows:
-  build_and_test:
-    jobs:
-      - build
-      - test:
-          requires:
-            - build
+      - deploy:
+          name: Build and push Docker image
+          command: |
+            TAG="0.1.1"
+            docker build -t milelucero98/tp-integrador:$1 .
+            docker login -u $DOCKER_LOGIN -p $DOCKER_PASSWORD
+            docker push milelucero98/tp-integrador:1
+            
+      - store_artifacts:
+          path: /tmp/test-results
+          destination: raw-test-output
+
+      - store_test_results:
+          path: /tmp/test-results
